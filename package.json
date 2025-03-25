@@ -1,0 +1,40 @@
+{
+  "name": "consultor-de-cnpj",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node start.js",
+    "dev": "nodemon start.js",
+    "start:network": "PORT=3002 node start.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "API para consulta e interceptação de URL de download de NFe",
+  "dependencies": {
+    "@2captcha/captcha-solver": "^1.3.0",
+    "2captcha": "^3.0.5-2",
+    "adm-zip": "^0.5.16",
+    "axios": "^1.8.4",
+    "body-parser": "^1.20.3",
+    "capsolver": "^1.0.1",
+    "capsolver-npm": "^2.1.9",
+    "cheerio": "^1.0.0",
+    "chromedriver": "^134.0.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "https-proxy-agent": "^7.0.6",
+    "jsdom": "^26.0.0",
+    "node-capsolver": "^1.1.0",
+    "node-forge": "^1.3.1",
+    "open": "^10.1.0",
+    "puppeteer": "^24.4.0",
+    "puppeteer-core": "^24.4.0",
+    "selenium-webdriver": "^4.30.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

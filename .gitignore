@@ -1,0 +1,34 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Dependency directories
+node_modules/
+.npm
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Environment variables
+.env
+
+# Generated certificate files
+cert.pem
+key.pem
+certificado.pfx
+
+# Temporary files
+temp/*
+!temp/.gitkeep
+
+# Virtual environment
+.venv
