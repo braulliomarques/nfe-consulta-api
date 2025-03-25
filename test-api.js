@@ -19,8 +19,9 @@ console.log(`Chave NFe: ${chaveNFe}`);
 console.log(`Endpoint: ${apiUrl}`);
 console.log(`\nIniciando requisição...\n`);
 
+// Configurar timeout mais longo (5 minutos) para dar tempo de resolver o captcha
 // Fazer a requisição para a API
-axios.get(apiUrl)
+axios.get(apiUrl, { timeout: 300000 }) // 300000ms = 5 minutos
   .then(response => {
     console.log('✅ SUCESSO:');
     console.log(JSON.stringify(response.data, null, 2));
