@@ -20,6 +20,10 @@ Antes de usar a API, é necessário configurar o certificado digital:
 
 > **Importante**: O certificado digital é essencial para a API autenticar-se no portal da SEFAZ e acessar as notas fiscais. A conversão do formato PFX para PEM é necessária para que o sistema possa utilizar o certificado nas requisições HTTPS.
 
+
+
+
+
 ## Requisitos
 
 - Node.js (v12 ou superior)
@@ -37,14 +41,16 @@ npm install
 
 ## Configuração
 
+-Crie um arquivo .env no diretorio raiz,
+
 O arquivo `.env` contém as configurações necessárias:
 
-
 ```
-CAPTCHA_API_KEY=5a2c3841df7b3e6f069c0e67cf1622d8 "Acesse https://2captcha.com/2captcha-api para contratação
+CAPTCHA_API_KEY=TOKEN_API_2CAPTCHA 
 "
 PORT=3002
 ```
+#Acesse https://2captcha.com/2captcha-api para contratação da api do captcha
 
 Certifique-se de que os certificados digitais estão presentes:
 - `certificado.pfx` - Seu certificado digital original no formato PKCS#12
