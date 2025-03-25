@@ -10,7 +10,7 @@ Antes de usar a API, é necessário configurar o certificado digital:
 2. Renomeie o arquivo para `certificado.pfx`
 3. Abra o arquivo `convert-forge.js` e atualize a senha do certificado:
    ```javascript
-   const PFX_PASSWORD = 'Labor@123'; // Altere para a senha do seu certificado
+   const PFX_PASSWORD = 'Senha-do-certificado'; // Altere para a senha do seu certificado
    ```
 4. Execute o script de conversão para gerar os arquivos PEM necessários:
    ```bash
@@ -39,8 +39,10 @@ npm install
 
 O arquivo `.env` contém as configurações necessárias:
 
+
 ```
-CAPTCHA_API_KEY=5a2c3841df7b3e6f069c0e67cf1622d8
+CAPTCHA_API_KEY=5a2c3841df7b3e6f069c0e67cf1622d8 "Acesse https://2captcha.com/2captcha-api para contratação
+"
 PORT=3002
 ```
 
