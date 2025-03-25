@@ -4,7 +4,7 @@ const path = require('path');
 
 // Configuração
 const PFX_PATH = path.resolve(__dirname, 'certificado.pfx');
-const PFX_PASSWORD = 'Labor@123';
+const PFX_PASSWORD = 'Senha-do-certificado-aqui';
 const CERT_OUTPUT = path.resolve(__dirname, 'cert.pem'); 
 const KEY_OUTPUT = path.resolve(__dirname, 'key.pem');
 
