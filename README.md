@@ -1,3 +1,18 @@
+# ATENÇÃO: PARA WINDOWS
+ - Baixar GIT https://git-scm.com/download/win
+      -Escolha uma das opções:
+         32-bit Git for Windows Setup
+         64-bit Git for Windows Setup.
+ - Instale
+
+e siga com o git clone https://github.com/braulliomarques/nfe-consulta-api
+   
+
+Após o GIT acesse o diretorio do projeto com o comando cd nfe-consulta-api
+
+Siga com os procedimentos abaixo normalmente.
+
+
 # API de Consulta e Download de NFe
 
 Esta API fornece endpoints para consulta de Notas Fiscais Eletrônicas (NFe) e interceptação da URL de download.
