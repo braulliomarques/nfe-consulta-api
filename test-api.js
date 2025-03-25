@@ -10,7 +10,7 @@ const axios = require('axios');
 const chaveNFe = process.argv[2] || '51250209608375000103550010000047311000141932';
 
 // URL da API
-const apiUrl = `http://177.23.191.86:3002/api/nfe/interceptar-url/${chaveNFe}`;
+const apiUrl = `http://localhost:3002/api/nfe/interceptar-url/${chaveNFe}`;
 
 console.log(`\n========================================`);
 console.log(`Testando API de interceptação de URL NFe`);
