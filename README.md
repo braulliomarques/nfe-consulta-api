@@ -1,4 +1,9 @@
 # ATENÇÃO: PARA WINDOWS
+
+ - Baixar Python e instalar
+   Faça download em https://www.python.org/downloads/release/python-3120/
+
+
  - Baixar GIT https://git-scm.com/download/win
       -Escolha uma das opções:
          32-bit Git for Windows Setup
