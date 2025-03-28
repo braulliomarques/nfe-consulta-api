@@ -44,19 +44,6 @@ Esta API fornece endpoints para consulta de Notas Fiscais Eletrônicas (NFe) e i
 
 Antes de usar a API, é necessário configurar o certificado digital:
 
-1. Coloque seu certificado digital (.pfx) na pasta raiz do projeto
-2. Renomeie o arquivo para `certificado.pfx`
-3. Abra o arquivo `convert-forge.js` e atualize a senha do certificado:
-   ```javascript
-   const PFX_PASSWORD = 'Senha-do-certificado'; // Altere para a senha do seu certificado
-   ```
-4. Execute o script de conversão para gerar os arquivos PEM necessários:
-   ```bash
-   node convert-forge.js
-   ```
-5. Verifique se foram gerados os arquivos `cert.pem` e `key.pem` na pasta raiz
-
-> **Importante**: O certificado digital é essencial para a API autenticar-se no portal da SEFAZ e acessar as notas fiscais. A conversão do formato PFX para PEM é necessária para que o sistema possa utilizar o certificado nas requisições HTTPS.
 
 
 
@@ -88,16 +75,28 @@ CAPTCHA_API_KEY=TOKEN_API_2CAPTCHA
 "
 PORT=3002
 ```
+Apague a extensão .txt do arquivo .env criado.
+
+Como mostrar extensões de arquivos no Windows 
+
+Abra o Explorer (Explorador de Arquivos)
+
+Clique na aba "Exibir" no topo
+
+Vá em "Mostrar" > "Extensões de nome de arquivo"
+
+Marque essa opção ✅
+
+Pronto! Agora você vai ver o .txt, .js, .json, etc., e poderá renomear corretamente para .env.
+
+
 #Acesse https://2captcha.com/2captcha-api para contratação da api do captcha
 
-Certifique-se de que os certificados digitais estão presentes:
-- `certificado.pfx` - Seu certificado digital original no formato PKCS#12
-- `cert.pem` e `key.pem` - Certificados convertidos pelo script `convert-forge.js`
 
-Se os arquivos PEM ainda não existirem, execute:
-```bash
-node convert-forge.js
-```
+
+
+
+
 
 ## Executando a API
 
