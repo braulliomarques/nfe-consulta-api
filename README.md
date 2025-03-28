@@ -10,6 +10,14 @@
          64-bit Git for Windows Setup.
  - Instale
 
+
+-Abra PowerShell como administrador e execute o comando:
+
+Set-ExecutionPolicy RemoteSigned
+
+Crie uma pasta para clone do projeto, e abra-a com o terminal
+
+
 e siga com o git clone https://github.com/braulliomarques/nfe-consulta-api
    
 
