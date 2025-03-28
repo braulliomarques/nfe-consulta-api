@@ -2,7 +2,8 @@
 
  - Baixar Python e instalar
    Faça download em https://www.python.org/downloads/release/python-3120/
-
+Antes de clicar em "Install Now", marque essa caixinha: ✅ Add Python to PATH
+Isso é super importante — é o que faz o comando python e pip funcionarem no terminal.
 
  - Baixar GIT https://git-scm.com/download/win
       -Escolha uma das opções:
