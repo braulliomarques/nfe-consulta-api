@@ -5,6 +5,11 @@
 Antes de clicar em "Install Now", marque essa caixinha: ✅ Add Python to PATH
 Isso é super importante — é o que faz o comando python e pip funcionarem no terminal.
 
+Após instalar, crie uma pasta para o projeto, abra-o como terminal, e execute:
+python.exe -m pip install --upgrade pip
+
+
+
  - Baixar GIT https://git-scm.com/download/win
       -Escolha uma das opções:
          32-bit Git for Windows Setup
@@ -23,6 +28,10 @@ e siga com o git clone https://github.com/braulliomarques/nfe-consulta-api
    
 
 Após o GIT acesse o diretorio do projeto com o comando cd nfe-consulta-api
+
+
+
+
 
 Siga com os procedimentos abaixo normalmente.
 
