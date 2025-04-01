@@ -6,7 +6,7 @@
 const app = require('./src/app');
 
 // Função de exemplo para interceptar a URL de uma NFe
-async function interceptarUrlNFe(chaveAcesso) {
+async function interceptarUrlNFe(chaveAcesso, token2captcha = null) {
   try {
     // Importar axios para fazer requisições HTTP
     const axios = require('axios');
@@ -16,8 +16,22 @@ async function interceptarUrlNFe(chaveAcesso) {
     
     console.log(`Interceptando URL para chave: ${chaveAcesso}`);
     
+    // Preparar dados da requisição
+    const requestData = {
+      chave: chaveAcesso
+    };
+    
+    // Adicionar token 2captcha se fornecido
+    if (token2captcha) {
+      requestData.token2captcha = token2captcha;
+      console.log('Usando token 2captcha fornecido');
+    }
+    
     // Fazer requisição para o endpoint
-    const response = await axios.get(`http://localhost:${PORT}/api/nfe/interceptar-url/${chaveAcesso}`);
+    const response = await axios.post(
+      `http://localhost:${PORT}/api/nfe/interceptar-url`, 
+      requestData
+    );
     
     // Verificar se a requisição foi bem-sucedida
     if (response.data && response.data.success && response.data.url) {
@@ -36,9 +50,10 @@ async function interceptarUrlNFe(chaveAcesso) {
 
 // Exemplo de uso
 const chaveExemplo = '51250209608375000103550010000047211000141634';
+const token2CaptchaExemplo = 'seu_token_aqui'; // Substitua pelo seu token 2captcha
 
 // Chamar a função de exemplo (só descomentar quando for usar)
-// interceptarUrlNFe(chaveExemplo);
+// interceptarUrlNFe(chaveExemplo, token2CaptchaExemplo);
 
 module.exports = {
   interceptarUrlNFe

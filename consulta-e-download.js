@@ -3,7 +3,7 @@
  * Este script realiza o fluxo completo, incluindo autenticação, captcha e download
  * 
  * Uso:
- * node consulta-e-download.js CHAVE_NFE
+ * node consulta-e-download.js CHAVE_NFE [--token2captcha TOKEN_2CAPTCHA]
  */
 
 const fs = require('fs');
@@ -14,7 +14,26 @@ require('dotenv').config();
 
 // Configurações
 const TEMP_DIR = './temp';
-const apiKey = process.env.CAPTCHA_API_KEY || '5a2c3841df7b3e6f069c0e67cf1622d8'; // Usar variável de ambiente ou valor padrão
+
+// Extrair argumentos da linha de comando
+let chaveAcesso = null;
+let token2captcha = null;
+
+// Processar argumentos da linha de comando
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  
+  if (arg === '--token2captcha' && i + 1 < process.argv.length) {
+    token2captcha = process.argv[i + 1];
+    i++; // Pular o próximo argumento que é o valor do token
+  } else if (!chaveAcesso) {
+    // Se não é um argumento nomeado e ainda não temos a chave, considerar como a chave
+    chaveAcesso = arg;
+  }
+}
+
+// Usar o token fornecido ou o valor da variável de ambiente
+const apiKey = token2captcha || process.env.CAPTCHA_API_KEY || '5a2c3841df7b3e6f069c0e67cf1622d8';
 const solver = new Solver(apiKey);
 
 // Criar diretório temporário se não existir
@@ -22,16 +41,15 @@ if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
-// Obter a chave de acesso da linha de comando
-const args = process.argv.slice(2);
-if (args.length === 0) {
+// Verificar se a chave foi fornecida
+if (!chaveAcesso) {
   console.error('Erro: Informe a chave de acesso da NFe');
-  console.error('Uso: node consulta-e-download.js CHAVE_NFE');
+  console.error('Uso: node consulta-e-download.js CHAVE_NFE [--token2captcha TOKEN_2CAPTCHA]');
   process.exit(1);
 }
 
-const chaveAcesso = args[0];
 console.log(`Iniciando processo para a chave: ${chaveAcesso}`);
+console.log(`Token 2captcha: ${token2captcha ? 'Fornecido' : 'Usando valor padrão'}`);
 
 // Configuração do certificado digital
 const certificado = {
@@ -52,6 +70,7 @@ async function consultaCompleta(chaveAcesso) {
   // Variáveis para controle de status
   let downloadSuccessful = false;
   let downloadUrl = null;
+  let htmlContent = null;
   
   // Registrar evento de início
   logEvent("inicio_processo", {
@@ -66,25 +85,40 @@ async function consultaCompleta(chaveAcesso) {
     porcentagem: 5
   });
   
-  const browser = await puppeteer.launch({
-    headless: 'new', // Modo headless moderno
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-web-security',
-      '--allow-running-insecure-content',
-      '--ignore-certificate-errors'
-    ]
-  });
+  let browser = null;
+  try {
+    browser = await puppeteer.launch({
+      headless: 'new', // Modo headless moderno
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--allow-running-insecure-content',
+        '--ignore-certificate-errors',
+        '--disable-features=site-per-process',
+        '--disable-gpu',
+        '--window-size=1366,768'
+      ],
+      timeout: 60000, // Timeout de 60 segundos para iniciar o navegador
+      ignoreHTTPSErrors: true
+    });
+    
+    console.log('Navegador iniciado com sucesso');
+  } catch (browserError) {
+    console.error(`Erro ao iniciar navegador: ${browserError.message}`);
+    throw new Error(`Falha ao iniciar navegador: ${browserError.message}`);
+  }
   
   logEvent("etapa", { 
     descricao: "Navegador iniciado com sucesso",
     porcentagem: 10
   });
   
+  let page = null;
+  
   try {
-    const page = await browser.newPage();
+    page = await browser.newPage();
     
     // Configurar handler para diálogos (alerts, confirms, prompts)
     page.on('dialog', async dialog => {
@@ -149,16 +183,44 @@ async function consultaCompleta(chaveAcesso) {
       }
     });
     
-    // Acessar página de consulta
+    // Acessar página de consulta com retry
     console.log('Acessando página da consulta NFe...');
     logEvent("etapa", { 
       descricao: "Acessando página de consulta da NFe", 
       porcentagem: 20 
     });
-    await page.goto('https://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=resumo&tipoConteudo=7PhJ+gAVw2g=', {
-      waitUntil: 'networkidle2',
-      timeout: 60000
-    });
+    
+    // Função para tentar acessar a página com retries
+    const acessarPaginaComRetry = async (url, maxRetries = 3) => {
+      let lastError = null;
+      
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          console.log(`Tentativa ${i+1} de acessar a página...`);
+          await page.goto(url, {
+            waitUntil: 'networkidle2',
+            timeout: 90000 // Aumentar timeout para 90 segundos
+          });
+          return true;
+        } catch (error) {
+          console.error(`Erro na tentativa ${i+1}: ${error.message}`);
+          lastError = error;
+          
+          // Verificar se o navegador ainda está conectado
+          if (!page.browser().isConnected()) {
+            console.error('Navegador foi desconectado, abortando...');
+            throw new Error('Navegador desconectado durante a navegação');
+          }
+          
+          // Esperar antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      }
+      
+      throw lastError || new Error('Falha ao acessar a página após múltiplas tentativas');
+    };
+    
+    await acessarPaginaComRetry('https://www.nfe.fazenda.gov.br/portal/consultaRecaptcha.aspx?tipoConsulta=resumo&tipoConteudo=7PhJ+gAVw2g=', 3);
     
     logEvent("etapa", { 
       descricao: "Página de consulta carregada", 
@@ -302,7 +364,7 @@ async function consultaCompleta(chaveAcesso) {
     });
     
     // Salvar HTML da página para análise
-    const htmlContent = await page.content();
+    htmlContent = await page.content();
     const pageUrl = page.url();
     const filePath = `${TEMP_DIR}/nfe-${chaveAcesso}-${timestamp}.html`;
     fs.writeFileSync(filePath, htmlContent);
@@ -330,6 +392,8 @@ async function consultaCompleta(chaveAcesso) {
       if (divNFe) {
         // Extrair campos da nota
         const camposNFe = divNFe.querySelectorAll('.rowTP01');
+        const dadosCompletos = {};
+        
         camposNFe.forEach(campo => {
           const labels = campo.querySelectorAll('label');
           const valores = campo.querySelectorAll('p');
@@ -339,25 +403,45 @@ async function consultaCompleta(chaveAcesso) {
               const chave = labels[i].innerText.trim();
               const valor = valores[i].innerText.trim();
               if (chave && valor) {
-                dados[chave] = valor;
+                dadosCompletos[chave] = valor;
               }
             }
           }
         });
+        
+        dados.detalhes = dadosCompletos;
+        
+        // Extrair campos importantes para acesso rápido
+        const extrairCampo = (nome) => {
+          return dadosCompletos[nome] || "N/A";
+        };
+        
+        dados.emitente = extrairCampo("Emitente:");
+        dados.destinatario = extrairCampo("Destinatário:");
+        dados.valor = extrairCampo("Valor Total da Nota Fiscal:");
+        dados.dataEmissao = extrairCampo("Data de Emissão:");
+        dados.naturezaOperacao = extrairCampo("Natureza da Operação:");
+        dados.status = extrairCampo("Situação da NF-e:");
       }
       
       return dados;
     }, chaveAcesso);
     
-    const dadosEncontrados = Object.keys(dadosNFe).length > 0;
+    const dadosEncontrados = Object.keys(dadosNFe).length > 1; // Mais que só a chave de acesso
     console.log('Dados extraídos:', dadosEncontrados ? 'Encontrados' : 'Vazio');
     
     logEvent("dados_nfe", { 
       encontrados: dadosEncontrados,
-      quantidade: Object.keys(dadosNFe).length,
-      // Incluir alguns dados básicos, se disponíveis
-      emitente: dadosNFe["Emitente:"] || "N/A",
-      valor: dadosNFe["Valor Total da Nota Fiscal:"] || "N/A"
+      quantidade: dadosNFe.detalhes ? Object.keys(dadosNFe.detalhes).length : 0,
+      // Incluir dados extraídos para exibição
+      emitente: dadosNFe.emitente || "N/A",
+      destinatario: dadosNFe.destinatario || "N/A",
+      valor: dadosNFe.valor || "N/A",
+      dataEmissao: dadosNFe.dataEmissao || "N/A",
+      naturezaOperacao: dadosNFe.naturezaOperacao || "N/A",
+      status: dadosNFe.status || "N/A",
+      // Incluir todos os detalhes
+      detalhes: dadosNFe.detalhes || {}
     });
     
     // Verificar botão de download
@@ -372,22 +456,31 @@ async function consultaCompleta(chaveAcesso) {
         porcentagem: 85 
       });
       
-      // Configurar interceptação para capturar o download
-      await page.setRequestInterception(true);
-      
-      page.on('request', async interceptedRequest => {
-        if (interceptedRequest.url().includes('downloadNFe.aspx')) {
-          console.log('Interceptando requisição de download:', interceptedRequest.url());
-          downloadUrl = interceptedRequest.url();
-          logEvent("download", { 
-            descricao: "Requisição de download interceptada", 
-            url: interceptedRequest.url() 
-          });
-          interceptedRequest.continue();
-        } else {
-          interceptedRequest.continue();
-        }
-      });
+      // Configurar interceptação para capturar o download com tratamento de erros melhorado
+      try {
+        await page.setRequestInterception(true);
+        
+        page.on('request', async interceptedRequest => {
+          if (interceptedRequest.url().includes('downloadNFe.aspx')) {
+            console.log('Interceptando requisição de download:', interceptedRequest.url());
+            downloadUrl = interceptedRequest.url();
+            logEvent("download", { 
+              descricao: "Requisição de download interceptada", 
+              url: interceptedRequest.url() 
+            });
+            interceptedRequest.continue();
+          } else {
+            interceptedRequest.continue();
+          }
+        });
+      } catch (interceptError) {
+        console.error(`Erro ao configurar interceptação: ${interceptError.message}`);
+        // Continue o processo, mesmo se a interceptação falhar
+        logEvent("erro", { 
+          descricao: "Erro ao configurar interceptação, continuando sem ela", 
+          erro: interceptError.message 
+        });
+      }
       
       // Clicar no botão de download e aguardar
       await page.click('#ctl00_ContentPlaceHolder1_btnDownload');
@@ -594,30 +687,40 @@ async function consultaCompleta(chaveAcesso) {
       error: error.message
     };
   } finally {
-    // Fechar o navegador
-    await browser.close();
+    // Fechar o navegador com tratamento de erros
+    if (browser) {
+      try {
+        await browser.close();
+        console.log('Navegador fechado com sucesso');
+      } catch (closeError) {
+        console.error(`Erro ao fechar navegador: ${closeError.message}`);
+      }
+    }
     
     // Adicionar um indicador se o processo não foi concluído corretamente
     if (!downloadSuccessful && !downloadUrl) {
       // Se não conseguimos o download nem a URL, marcar como processamento incompleto
-      emitEvent('erro', {
+      logEvent('erro', {
         descricao: 'Processamento não foi concluído corretamente. O resultado final não foi obtido.',
         erro: 'processamento_incompleto',
         reprocessamentoRecomendado: true
       });
       
-      // Salvar o HTML final para diagnóstico
-      const htmlFilePath = path.join(TEMP_DIR, `incompleto-${chaveAcesso}-${Date.now()}.html`);
-      fs.writeFileSync(htmlFilePath, await page.content());
-      console.log(`HTML da página incompleta salvo em: ${htmlFilePath}`);
+      // Salvar o HTML final para diagnóstico se tivermos conteúdo HTML
+      if (htmlContent) {
+        const htmlFilePath = path.join(TEMP_DIR, `incompleto-${chaveAcesso}-${Date.now()}.html`);
+        fs.writeFileSync(htmlFilePath, htmlContent);
+        console.log(`HTML da página incompleta salvo em: ${htmlFilePath}`);
+      } else {
+        console.log('Não foi possível salvar HTML da página, não disponível');
+      }
       
       // Retornar resultado de falha
       console.log(JSON.stringify({
         success: false,
         error: 'Processamento incompleto',
         errorType: 'processamento_incompleto',
-        reprocessamentoRecomendado: true,
-        html: htmlFilePath
+        reprocessamentoRecomendado: true
       }));
       process.exit(1);
     }

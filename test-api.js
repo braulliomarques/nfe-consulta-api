@@ -1,48 +1,74 @@
-/**
- * Script para testar a API de interceptação de URL de NFe
- * 
- * Uso: node test-api.js CHAVE_NFE
- */
-
 const axios = require('axios');
 
-// Obter a chave de acesso como argumento de linha de comando ou usar chave padrão
-const chaveNFe = process.argv[2] || '51250209608375000103550010000047311000141932';
-
-// URL da API
-const apiUrl = `http://127.0.0.1:3002/api/nfe/interceptar-url/${chaveNFe}`;
-
-console.log(`\n========================================`);
-console.log(`Testando API de interceptação de URL NFe`);
-console.log(`========================================`);
-console.log(`Chave NFe: ${chaveNFe}`);
-console.log(`Endpoint: ${apiUrl}`);
-console.log(`\nIniciando requisição...\n`);
-
-// Configurar timeout mais longo (5 minutos) para dar tempo de resolver o captcha
-// Fazer a requisição para a API
-axios.get(apiUrl, { timeout: 300000 }) // 300000ms = 5 minutos
-  .then(response => {
-    console.log('✅ SUCESSO:');
-    console.log(JSON.stringify(response.data, null, 2));
+async function interceptarUrlNFe(chaveAcesso, token2captcha = null) {
+  try {
+    // Configuração da porta do servidor
+    const PORT = process.env.PORT || 3002;
     
-    if (response.data.url) {
-      console.log(`\n📋 URL interceptada com sucesso!\n`);
+    console.log(`Interceptando URL para chave: ${chaveAcesso}`);
+    
+    // Preparar dados da requisição
+    const requestData = {
+      chave: chaveAcesso
+    };
+    
+    // Adicionar token 2captcha se fornecido
+    if (token2captcha) {
+      requestData.token2captcha = token2captcha;
+      console.log('Usando token 2captcha fornecido');
     }
-  })
-  .catch(error => {
-    console.error('❌ ERRO:');
     
-    if (error.response) {
-      // A requisição foi feita e o servidor respondeu com status fora do intervalo 2xx
-      console.error(`Status: ${error.response.status}`);
-      console.error('Resposta:');
-      console.error(JSON.stringify(error.response.data, null, 2));
-    } else if (error.request) {
-      // A requisição foi feita mas não houve resposta
-      console.error('Erro: Sem resposta do servidor. Verifique se a API está rodando.');
+    // Fazer requisição para o endpoint
+    const response = await axios.post(
+      `http://localhost:${PORT}/api/nfe/interceptar-url`, 
+      requestData
+    );
+    
+    // Verificar se a requisição foi bem-sucedida
+    if (response.data && response.data.success && response.data.url) {
+      console.log('URL interceptada com sucesso:');
+      console.log(response.data.url);
+      
+      // Mostrar dados da NFe, se disponíveis
+      if (response.data.dadosNFe) {
+        console.log('\nDados da NFe extraídos:');
+        console.log('------------------------');
+        
+        const dados = response.data.dadosNFe;
+        if (dados.encontrados) {
+          console.log(`Emitente: ${dados.emitente}`);
+          console.log(`Valor Total: ${dados.valor}`);
+          
+          // Se houver mais dados detalhados
+          if (dados.detalhes) {
+            console.log('\nDetalhes completos:');
+            console.log(JSON.stringify(dados.detalhes, null, 2));
+          }
+        } else {
+          console.log('Não foi possível extrair dados detalhados da NFe.');
+        }
+      }
+      
+      return {
+        url: response.data.url,
+        dadosNFe: response.data.dadosNFe
+      };
     } else {
-      // Erro na configuração da requisição
-      console.error(`Erro: ${error.message}`);
+      console.error('Erro ao interceptar URL:', response.data);
+      return null;
     }
-  }); 
+  } catch (error) {
+    console.error('Erro na requisição:', error.message);
+    return null;
+  }
+}
+
+// Executar a função com os parâmetros fornecidos
+interceptarUrlNFe('51240301624149000457550010001270781003812344', 'f623a43b10acb451a2c276858c0e5f7b')
+  .then(resultado => {
+    if (resultado) {
+      console.log('\nProcessamento concluído com sucesso.');
+    } else {
+      console.log('\nNão foi possível obter a URL.');
+    }
+  });

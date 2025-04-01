@@ -125,9 +125,18 @@ Parâmetros (corpo da requisição):
 Exemplo de requisição:
 
 ```bash
+# Requisição básica (sem token 2captcha)
 curl -X POST http://localhost:3002/api/nfe/interceptar-url \
   -H "Content-Type: application/json" \
   -d '{"chave": "51240301624149000457550010001270781003812344"}'
+
+# Requisição com token 2captcha
+curl -X POST http://localhost:3002/api/nfe/interceptar-url \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chave": "51240301624149000457550010001270781003812344",
+    "token2captcha": "f623a43b10acb451a2c276858c0e5f7b"
+  }'
 ```
 
 Exemplo de resposta:
@@ -160,7 +169,12 @@ Exemplo de resposta:
 ## Observações
 
 - O processo utiliza o serviço 2Captcha para resolver o hCaptcha do portal da NFe
-- O tempo de resposta pode variar dependendo da disponibilidade do serviço da SEFAZ e da resolução do captcha 
+- O tempo de resposta pode variar dependendo da disponibilidade do serviço da SEFAZ e da resolução do captcha
+- O token 2captcha é opcional - se não for fornecido, a API usará o token padrão configurado no arquivo .env
+- Usar um token 2captcha personalizado pode ser útil para:
+  - Ter mais controle sobre o saldo da conta 2captcha
+  - Usar diferentes contas 2captcha para diferentes clientes
+  - Evitar conflitos quando múltiplas requisições são feitas simultaneamente
 
 ## Solução de Problemas
 

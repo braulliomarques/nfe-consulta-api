@@ -705,7 +705,7 @@ router.post('/download-batch', async (req, res) => {
   }
 });
 
-// Rota para interceptar a URL de download e retorná-la como JSON
+// Rota para interceptar a URL de download e retorná-la como JSON (versão GET para compatibilidade)
 router.get('/interceptar-url/:chave', async (req, res) => {
   try {
     const { chave } = req.params;
@@ -749,6 +749,7 @@ router.get('/interceptar-url/:chave', async (req, res) => {
     
     let stdoutBuffer = '';
     let downloadUrl = null;
+    let dadosNFe = null;
     
     // Capturar saída em tempo real
     childProcess.stdout.on('data', (data) => {
@@ -759,6 +760,19 @@ router.get('/interceptar-url/:chave', async (req, res) => {
       const lines = output.split('\n');
       
       for (const line of lines) {
+        // Capturar dados da NFe
+        if (line.includes('"event": "dados_nfe"') || line.includes('"event":"dados_nfe"')) {
+          try {
+            const match = line.match(/{"event": ?"dados_nfe", ?"data": ?({.*})}/);
+            if (match && match.length === 2) {
+              console.log('Dados da NFe capturados');
+              dadosNFe = JSON.parse(match[1]);
+            }
+          } catch (e) {
+            console.log('Erro ao processar dados da NFe:', e);
+          }
+        }
+        
         // Procurar pelo evento de download com URL
         if (line.includes('"event": "download"') || line.includes('"event":"download"')) {
           try {
@@ -776,6 +790,7 @@ router.get('/interceptar-url/:chave', async (req, res) => {
                   success: true, 
                   url: downloadUrl,
                   chave,
+                  dadosNFe,
                   message: 'URL interceptada com sucesso'
                 });
                 
@@ -801,6 +816,7 @@ router.get('/interceptar-url/:chave', async (req, res) => {
               success: true, 
               url: downloadUrl,
               chave,
+              dadosNFe,
               message: 'URL interceptada com sucesso'
             });
             
@@ -829,6 +845,7 @@ router.get('/interceptar-url/:chave', async (req, res) => {
             success: true, 
             url: downloadUrl,
             chave,
+            dadosNFe,
             message: 'URL interceptada com sucesso'
           });
         } else {
@@ -836,19 +853,35 @@ router.get('/interceptar-url/:chave', async (req, res) => {
           res.status(404).json({ 
             success: false, 
             error: 'URL não encontrada', 
-            message: 'Não foi possível interceptar a URL de download para esta chave' 
+            message: 'Não foi possível interceptar a URL de download para esta chave',
+            dadosNFe
           });
         }
         resEnviada = true;
       }
     });
     
-    // Timeout de segurança (3 minutos)
+    // Timeout de segurança (5 minutos)
     setTimeout(() => {
       // Matar o processo se ainda estiver rodando
       try {
         if (childProcess.exitCode === null) {
-          childProcess.kill();
+          console.log('Atingido timeout de 5 minutos, finalizando processo...');
+          // Enviar SIGTERM primeiro para permitir encerramento limpo
+          childProcess.kill('SIGTERM');
+          
+          // Após 10 segundos, força o encerramento com SIGKILL se ainda estiver rodando
+          setTimeout(() => {
+            try {
+              if (childProcess.exitCode === null) {
+                console.log('Processo não encerrou com SIGTERM, usando SIGKILL...');
+                childProcess.kill('SIGKILL');
+              }
+            } catch (e) {
+              console.error('Erro ao finalizar processo com SIGKILL:', e);
+            }
+          }, 10000);
+          
           console.log('Processo finalizado por timeout de segurança');
         }
       } catch (e) {
@@ -860,18 +893,232 @@ router.get('/interceptar-url/:chave', async (req, res) => {
         res.status(408).json({ 
           success: false, 
           error: 'Timeout de execução', 
-          message: 'Tempo limite excedido (3 minutos) ao tentar interceptar a URL' 
+          message: 'Tempo limite excedido (5 minutos) ao tentar interceptar a URL',
+          dadosNFe
         });
         resEnviada = true;
       }
-    }, 3 * 60 * 1000);
+    }, 5 * 60 * 1000); // 5 minutos = 300 segundos
     
   } catch (error) {
     console.error('Erro ao interceptar URL:', error);
     res.status(500).json({ 
       success: false, 
       error: 'Erro ao interceptar URL', 
-      message: error.message 
+      message: error.message,
+      dadosNFe
+    });
+  }
+});
+
+// Rota para interceptar a URL de download e retorná-la como JSON (versão POST com suporte a token 2captcha)
+router.post('/interceptar-url', async (req, res) => {
+  try {
+    const { chave, token2captcha } = req.body;
+    
+    // Validar chave de acesso
+    if (!chave) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Chave de acesso não fornecida' 
+      });
+    }
+    
+    if (!validarChaveAcesso(chave)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Chave de acesso inválida. Deve conter 44 dígitos numéricos.' 
+      });
+    }
+    
+    console.log(`Iniciando interceptação de URL para a chave: ${chave}...`);
+    
+    // Usar o script consulta-e-download.js para o fluxo completo de autenticação e download
+    const scriptPath = path.resolve(process.cwd(), 'consulta-e-download.js');
+    
+    // Verificar se o script existe
+    if (!fs.existsSync(scriptPath)) {
+      return res.status(500).json({
+        success: false,
+        error: 'Script não encontrado',
+        message: 'O script consulta-e-download.js não foi encontrado. Verifique a instalação.'
+      });
+    }
+    
+    // Variável para controlar se a resposta já foi enviada
+    let resEnviada = false;
+    
+    // Preparar argumentos para o script, incluindo o token 2captcha se fornecido
+    const scriptArgs = [scriptPath, chave];
+    if (token2captcha) {
+      scriptArgs.push('--token2captcha', token2captcha);
+    }
+    
+    // Executar o script e capturar a saída
+    const childProcess = require('child_process').spawn('node', scriptArgs, {
+      cwd: process.cwd()
+    });
+    
+    let stdoutBuffer = '';
+    let downloadUrl = null;
+    let dadosNFe = null;
+    
+    // Capturar saída em tempo real
+    childProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      stdoutBuffer += output;
+      
+      // Procurar por eventos JSON na saída
+      const lines = output.split('\n');
+      
+      for (const line of lines) {
+        // Capturar dados da NFe
+        if (line.includes('"event": "dados_nfe"') || line.includes('"event":"dados_nfe"')) {
+          try {
+            const match = line.match(/{"event": ?"dados_nfe", ?"data": ?({.*})}/);
+            if (match && match.length === 2) {
+              console.log('Dados da NFe capturados');
+              dadosNFe = JSON.parse(match[1]);
+            }
+          } catch (e) {
+            console.log('Erro ao processar dados da NFe:', e);
+          }
+        }
+        
+        // Procurar pelo evento de download com URL
+        if (line.includes('"event": "download"') || line.includes('"event":"download"')) {
+          try {
+            // Extrair os dados JSON
+            const match = line.match(/{"event": ?"download", ?"data": ?({.*})}/);
+            if (match && match.length === 2) {
+              const eventData = JSON.parse(match[1]);
+              
+              if (eventData.url && !resEnviada) {
+                console.log(`URL de download interceptada: ${eventData.url}`);
+                downloadUrl = eventData.url;
+                
+                // Responder imediatamente ao cliente assim que a URL for detectada
+                res.json({ 
+                  success: true, 
+                  url: downloadUrl,
+                  chave,
+                  dadosNFe,
+                  message: 'URL interceptada com sucesso'
+                });
+                
+                resEnviada = true;
+                
+                // Manter o processo rodando para completar as tarefas, mas a resposta já foi enviada
+              }
+            }
+          } catch (e) {
+            console.log('Erro ao processar evento JSON:', e);
+          }
+        }
+        
+        // Também tentar detectar URL de download diretamente relatada
+        if (line.includes('URL de download detectada:') && !resEnviada) {
+          const urlMatch = line.match(/URL de download detectada: (.+)/);
+          if (urlMatch && urlMatch.length === 2) {
+            console.log(`URL de download encontrada na saída: ${urlMatch[1]}`);
+            downloadUrl = urlMatch[1];
+            
+            // Responder imediatamente ao cliente assim que a URL for detectada
+            res.json({ 
+              success: true, 
+              url: downloadUrl,
+              chave,
+              dadosNFe,
+              message: 'URL interceptada com sucesso'
+            });
+            
+            resEnviada = true;
+            
+            // Manter o processo rodando para completar as tarefas, mas a resposta já foi enviada
+          }
+        }
+      }
+    });
+    
+    // Lidar com erros e timeout mesmo se a resposta já tiver sido enviada
+    childProcess.stderr.on('data', (data) => {
+      console.error(`Erro no processo: ${data}`);
+    });
+    
+    // Evento de finalização
+    childProcess.on('close', (code) => {
+      console.log(`Processo finalizado com código: ${code}`);
+      
+      // Se o processo terminou e ainda não enviamos uma resposta
+      if (!resEnviada) {
+        if (downloadUrl) {
+          // URL foi encontrada mas não enviada
+          res.json({ 
+            success: true, 
+            url: downloadUrl,
+            chave,
+            dadosNFe,
+            message: 'URL interceptada com sucesso'
+          });
+        } else {
+          // Processo terminou sem encontrar URL
+          res.status(404).json({ 
+            success: false, 
+            error: 'URL não encontrada', 
+            message: 'Não foi possível interceptar a URL de download para esta chave',
+            dadosNFe
+          });
+        }
+        resEnviada = true;
+      }
+    });
+    
+    // Timeout de segurança (5 minutos)
+    setTimeout(() => {
+      // Matar o processo se ainda estiver rodando
+      try {
+        if (childProcess.exitCode === null) {
+          console.log('Atingido timeout de 5 minutos, finalizando processo...');
+          // Enviar SIGTERM primeiro para permitir encerramento limpo
+          childProcess.kill('SIGTERM');
+          
+          // Após 10 segundos, força o encerramento com SIGKILL se ainda estiver rodando
+          setTimeout(() => {
+            try {
+              if (childProcess.exitCode === null) {
+                console.log('Processo não encerrou com SIGTERM, usando SIGKILL...');
+                childProcess.kill('SIGKILL');
+              }
+            } catch (e) {
+              console.error('Erro ao finalizar processo com SIGKILL:', e);
+            }
+          }, 10000);
+          
+          console.log('Processo finalizado por timeout de segurança');
+        }
+      } catch (e) {
+        console.error('Erro ao finalizar processo:', e);
+      }
+      
+      // Se ainda não enviamos uma resposta, enviar erro de timeout
+      if (!resEnviada) {
+        res.status(408).json({ 
+          success: false, 
+          error: 'Timeout de execução', 
+          message: 'Tempo limite excedido (5 minutos) ao tentar interceptar a URL',
+          dadosNFe
+        });
+        resEnviada = true;
+      }
+    }, 5 * 60 * 1000); // 5 minutos = 300 segundos
+    
+  } catch (error) {
+    console.error('Erro ao interceptar URL:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro ao interceptar URL', 
+      message: error.message,
+      dadosNFe
     });
   }
 });

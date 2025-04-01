@@ -32,37 +32,50 @@ chmod +x nfe_api_client.py
 ./nfe_api_client.py CHAVE_NFE
 ```
 
-Exemplo:
+### Executando com token 2captcha personalizado
+
 ```bash
-./nfe_api_client.py 51250209608375000103550010000047211000141634
+./nfe_api_client.py CHAVE_NFE --token2captcha SEU_TOKEN_2CAPTCHA
 ```
 
 ### Opções disponíveis
 
 ```
-usage: nfe_api_client.py [-h] [--host HOST] [--port PORT] [chave]
+usage: nfe_api_client.py [-h] [--host HOST] [--port PORT] [--token2captcha TOKEN2CAPTCHA] [chave]
 
 Cliente Python para a API de NFe
 
 positional arguments:
-  chave        Chave de acesso da NFe (44 dígitos)
+  chave                 Chave de acesso da NFe (44 dígitos)
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --host HOST  Host da API (padrão: localhost)
-  --port PORT  Porta da API (padrão: 3002)
+  -h, --help           show this help message and exit
+  --host HOST          Host da API (padrão: localhost)
+  --port PORT          Porta da API (padrão: 3002)
+  --token2captcha TOKEN2CAPTCHA
+                      Token personalizado para o serviço 2Captcha
 ```
 
 ### Exemplos
 
 1. Usando uma chave específica:
 ```bash
-./nfe_api_client.py 51250209608375000103550010000047211000141634
+./nfe_api_client.py 51240301624149000457550010001270781003812344
 ```
 
-2. Especificando um host e porta diferentes:
+2. Usando uma chave com token 2captcha personalizado:
 ```bash
-./nfe_api_client.py 51250209608375000103550010000047211000141634 --host 192.168.1.100 --port 3000
+./nfe_api_client.py 51240301624149000457550010001270781003812344 --token2captcha f623a43b10acb451a2c276858c0e5f7b
+```
+
+3. Especificando um host e porta diferentes:
+```bash
+./nfe_api_client.py 51240301624149000457550010001270781003812344 --host 192.168.1.100 --port 3000
+```
+
+4. Usando todos os parâmetros:
+```bash
+./nfe_api_client.py 51240301624149000457550010001270781003812344 --host 192.168.1.100 --port 3000 --token2captcha f623a43b10acb451a2c276858c0e5f7b
 ```
 
 ## Exemplo de resposta
@@ -99,4 +112,9 @@ Se bem-sucedida, a requisição retornará algo como:
 - O script exige que a API esteja rodando (por padrão em http://localhost:3002)
 - A operação pode levar algum tempo devido à resolução de captcha no portal da NFe
 - Verifique se a chave NFe é válida (44 dígitos numéricos)
-- O timeout da requisição é de 3 minutos (180 segundos) 
+- O timeout da requisição é de 3 minutos (180 segundos)
+- O token 2captcha é opcional - se não for fornecido, a API usará o token padrão configurado no arquivo .env
+- Usar um token 2captcha personalizado pode ser útil para:
+  - Ter mais controle sobre o saldo da conta 2captcha
+  - Usar diferentes contas 2captcha para diferentes clientes
+  - Evitar conflitos quando múltiplas requisições são feitas simultaneamente 
