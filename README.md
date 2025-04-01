@@ -115,16 +115,19 @@ A API estará disponível em: http://localhost:3002
 Endpoint para interceptar a URL de download de uma NFe:
 
 ```
-GET /api/nfe/interceptar-url/:chave
+POST /api/nfe/interceptar-url
 ```
 
-Parâmetros:
-- `:chave` - Chave de acesso da NFe (44 dígitos)
+Parâmetros (corpo da requisição):
+- `chave` - Chave de acesso da NFe (44 dígitos)
+- `token2captcha` - (Opcional) Token personalizado para o serviço 2Captcha
 
 Exemplo de requisição:
 
 ```bash
-curl http://localhost:3002/api/nfe/interceptar-url/51250209608375000103550010000047211000141634
+curl -X POST http://localhost:3002/api/nfe/interceptar-url \
+  -H "Content-Type: application/json" \
+  -d '{"chave": "51240301624149000457550010001270781003812344"}'
 ```
 
 Exemplo de resposta:
@@ -133,9 +136,26 @@ Exemplo de resposta:
 {
   "success": true,
   "url": "https://www.nfe.fazenda.gov.br/portal/downloadNFe.aspx?tipoConsulta=resumo&a=/FUbC0GSMHCJjbZ2NgfjZsg6TCH73LphlAQbw+OtsmBc5ekZWk7HifGG8RgIx/zC&tipoConteudo=7PhJ%20gAVw2g=&lp=L0ZVYkMwR1NNSENKamJaMk5nZmpac2c2VENINzNMcGhsQVFidytPdHNtQmM1ZWtaV2s3SGlmR0c4UmdJeC96Qw==",
-  "chave": "51250209608375000103550010000047211000141634"
+  "chave": "51240301624149000457550010001270781003812344",
+  "dadosNFe": {
+    "encontrados": true,
+    "quantidade": 14,
+    "emitente": "NOME DO EMITENTE LTDA",
+    "destinatario": "NOME DO DESTINATÁRIO",
+    "valor": "N/A",
+    "dataEmissao": "01/03/2024",
+    "naturezaOperacao": "VENDA DE MERCADORIA",
+    "status": "AUTORIZADA",
+    "detalhes": {
+      "campo1": "valor1",
+      "campo2": "valor2"
+    }
+  },
+  "message": "URL interceptada com sucesso"
 }
 ```
+
+> Nota: Existe também o endpoint `GET /api/nfe/interceptar-url/:chave` para compatibilidade, que funciona de maneira similar ao endpoint POST.
 
 ## Observações
 

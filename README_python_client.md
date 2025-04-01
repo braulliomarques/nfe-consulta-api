@@ -73,7 +73,24 @@ Se bem-sucedida, a requisição retornará algo como:
 {
   "success": true,
   "url": "https://www.nfe.fazenda.gov.br/portal/downloadNFe.aspx?tipoConsulta=resumo&a=/FUbC0GSMHCJjbZ2NgfjZsg6TCH73LphlAQbw+OtsmBc5ekZWk7HifGG8RgIx/zC&tipoConteudo=7PhJ%20gAVw2g=&lp=L0ZVYkMwR1NNSENKamJaMk5nZmpac2c2VENINzNMcGhsQVFidytPdHNtQmM1ZWtaV2s3SGlmR0c4UmdJeC96Qw==",
-  "chave": "51250209608375000103550010000047211000141634"
+  "chave": "51240301624149000457550010001270781003812344",
+  "dadosNFe": {
+    "encontrados": true,
+    "quantidade": 14,
+    "emitente": "NOME DO EMITENTE LTDA",
+    "destinatario": "NOME DO DESTINATÁRIO",
+    "valor": "N/A",
+    "dataEmissao": "01/03/2024",
+    "naturezaOperacao": "VENDA DE MERCADORIA",
+    "status": "AUTORIZADA",
+    "detalhes": {
+      "Emitente:": "NOME DO EMITENTE LTDA",
+      "Destinatário:": "NOME DO DESTINATÁRIO",
+      "Valor Total da Nota Fiscal:": "N/A",
+      "Data de Emissão:": "01/03/2024"
+    }
+  },
+  "message": "URL interceptada com sucesso"
 }
 ```
 
