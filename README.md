@@ -36,6 +36,95 @@ Após o GIT acesse o diretorio do projeto com o comando cd nfe-consulta-api
 Siga com os procedimentos abaixo normalmente.
 
 
+# API de Consulta de NFe
+
+## O que é esta API?
+
+Esta API é uma ferramenta que facilita a consulta de Notas Fiscais Eletrônicas (NFe) do portal da Receita Federal. Em termos simples, ela faz o trabalho pesado de acessar o portal oficial da NFe, preencher os dados necessários, resolver o captcha de segurança e retornar as informações da nota fiscal de forma organizada.
+
+### Como funciona?
+
+Imagine que você precisa consultar uma nota fiscal. Normalmente, você teria que:
+1. Acessar o portal da Receita Federal
+2. Preencher manualmente a chave da NFe
+3. Resolver um captcha de segurança
+4. Navegar por várias páginas para encontrar as informações
+
+Nossa API automatiza todo esse processo. Você só precisa fornecer a chave da NFe, e ela:
+1. Acessa automaticamente o portal
+2. Preenche os dados necessários
+3. Resolve o captcha automaticamente
+4. Retorna todas as informações organizadas em um formato fácil de usar
+
+### O que você recebe?
+
+Quando você consulta uma NFe, a API retorna:
+- Dados do emitente (quem emitiu a nota)
+- Dados do destinatário (quem recebeu a nota)
+- Data de emissão
+- Status da nota (se está autorizada, cancelada, etc.)
+- URL para download da nota fiscal
+- E outras informações relevantes
+
+### Como usar?
+
+Você pode usar a API de várias formas:
+
+1. **Usando o navegador (mais simples)**:
+   - Acesse: `http://localhost:3002/api/nfe/interceptar-url?chave=SUA_CHAVE_NFE`
+   - Substitua SUA_CHAVE_NFE pela chave da nota fiscal (44 dígitos)
+
+2. **Usando o cliente Python**:
+   ```bash
+   ./nfe_api_client.py SUA_CHAVE_NFE
+   ```
+
+3. **Usando JavaScript**:
+   ```javascript
+   fetch('http://localhost:3002/api/nfe/interceptar-url', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       chave: 'SUA_CHAVE_NFE'
+     })
+   })
+   ```
+
+### Requisitos para usar
+
+1. A API precisa estar rodando no seu computador (ou servidor)
+2. A chave da NFe deve ter 44 dígitos numéricos
+3. É necessário ter uma conta no serviço 2Captcha (para resolver os captchas automaticamente)
+
+### Exemplo de resposta
+
+Quando você faz uma consulta, recebe algo assim:
+```json
+{
+  "success": true,
+  "url": "https://www.nfe.fazenda.gov.br/portal/downloadNFe.aspx?...",
+  "chave": "51240301624149000457550010001270781003812344",
+  "dadosNFe": {
+    "encontrados": true,
+    "quantidade": 14,
+    "emitente": "NOME DO EMITENTE LTDA",
+    "destinatario": "NOME DO DESTINATÁRIO",
+    "dataEmissao": "01/03/2024",
+    "naturezaOperacao": "VENDA DE MERCADORIA",
+    "status": "AUTORIZADA"
+  }
+}
+```
+
+### Observações importantes
+
+- A consulta pode levar alguns segundos para completar
+- O processo é automatizado, mas respeita as regras do portal da Receita Federal
+- Você pode usar a API para consultar quantas notas fiscais precisar
+- A API é gratuita para uso local, mas requer uma conta no 2Captcha
+
 # API de Consulta e Download de NFe
 
 Esta API fornece endpoints para consulta de Notas Fiscais Eletrônicas (NFe) e interceptação da URL de download.
